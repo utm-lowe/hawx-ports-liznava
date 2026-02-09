@@ -1,6 +1,4 @@
-//    What is a CIRCULAR BUFFER?
-//    A circular buffer, cyclic buffer or ring buffer is a data structure that
-//    uses a single, fixed-size buffer as if it were connected end-to-end.
+
 //    This means that whenever data arrives into the buffer, the buffer
 //    actually remembers the order in which data arrived. This will retrieve
 //    you with the oldest      data first. So the first data that enters is the
@@ -145,77 +143,162 @@ struct port ports[NPORT];
 void 
 port_init(void)
 {
-    // Initialize the ports list.  Upon initialization, the following should be
-    // true:
-    //    - The Predefined ports (see port.h) should all be owned by the
-    //      kernel.
-    //    - All other ports should be marked as free.
-    //    - All ports should have their start and end set to indicate an empty
-    //      buffer
-    
-    // Loop through 0 to NPORT-1, initialize status of kernal ports and
-    // non-kernal ports. Make sure that all ports are empty.
 
-    // YOUR CODE HERE
+
+
+
+  for(int i = 0; i < NPORT; i++){
+    ports[i].count = 0;
+     ports[i].tail = 0;
+    ports[i].free = 1;
+
+    ports[i].head = 0;
+    
+    ports[i].owner = -1;
+    ports[i].type = PORT_TYPE_FREE;
+
+
+
+    if(i == 0){
+        ports[i].owner = 0;
+        ports[i].type = PORT_TYPE_KERNEL;
+
+
+        ports[i].free = 0;
+    }
+
+
+    else if(i == 1){
+       
+
+        ports[i].owner = 0;
+        ports[i].type = PORT_TYPE_KERNEL;
+
+        ports[i].free = 0;
+    }
+    else if(i == 2){
+
+
+        ports[i].owner = 0;
+
+        ports[i].type = PORT_TYPE_KERNEL;
+
+        ports[i].free = 0;
+    }
 }
 
 
-// Close the port.
+}
+
 void 
 port_close(int port)
 {
-    // Close the port.  If the port is not open, nothing will happen.  However,
-    // if it is open, we empty its contents and mark it as free.
 
-    // YOUR CODE HERE
-}
-
-
-
-// Acquire Port.  If the specified port is negative, allocate the next available port.
-int 
-port_acquire(int port, procid_t proc_id)
-{
-    // If the port number is -1, allocate the next free port.
-    // If the port number is not -1, check to see if the port is available.
-    //   If the port is not available, return -1 
-    // Mark the port as allocated, set the owner of the port, and
-    // then return the port number allocated.
-    // 
-    // If this operation fails, return -1.
-
-    // YOUR CODE HERE
+    if(ports[port].free == 1) return;
     
-    return -1;
+
+    if(ports[port].type == PORT_TYPE_KERNEL) return;
+
+
+    ports[port].tail = 0;
+    ports[port].count = 0;
+    ports[port].free = 1; 
+    ports[port].head = 0;
+
+    ports[port].owner = 0;
+    ports[port].type = PORT_TYPE_FREE;
+
+
+
 }
 
+
+
+int port_acquire(int port, procid_t proc_id)
+{
+
+    if(port == -1){
+        for(int i = PORT_DISKCMD + 1; i < NPORT; i++){
+
+            if(ports[i].free == 1){
+                ports[i].free  = 0;
+
+
+
+                ports[i].owner = proc_id;
+
+                return i;
+
+            }
+        }
+        return -1;
+
+    }
+
+    if(port >= NPORT) 
+        return -1;
+
+
+    if(ports[port].type == PORT_TYPE_KERNEL) 
+        return -1;
+
+    if(ports[port].free == 0) return -1;
+
+    ports[port].free  = 0;
+
+    ports[port].owner = proc_id;
+
+    return port;
+}
 
 // Write up to n characters from buf to a port.  Return the number of bytes written.
 int 
 port_write(int port, char *buf, int n)
 {
-    // If the port is not open, return -1
-    // Write, at most, n bytes to the buffer.  If the buffer fills
-    // up before n bytes, stop writing. Return the actual number of bytes
-    // you have written. Be sure to update the count field as you
-    // write it.
+    
 
-    // YOUR CODE HERE
-    return -1;
+
+
+
+    if(ports[port].free == 1 && ports[port].type != PORT_TYPE_KERNEL){
+        return -1;
+    }
+
+
+    int k = 0;
+    while(k < n && ports[port].count < PORT_BUF_SIZE){
+        ports[port].buffer[ports[port].head] = buf[num];
+
+        ports[port].head = (ports[port].head+1) % PORT_BUF_SIZE;
+
+        k++;
+        ports[port].count++;
+
+    }
+
+    return k; 
+
 }
-
-
-// Read up to n characters from a port into buf. Return the number of bytes read.
 int 
 port_read(int port, char *buf, int n)
 {
-    // If the port is not open, return -1.
-    // Read at most n bytes from the port. If the port contents are
-    // exhausted before you complete the read, stop reading.
-    // Return the actual number of bytes you have read.
-    // Be sure to update count as you read.
+    
+    if(ports[port].free == 1 && ports[port].type != PORT_TYPE_KERNEL){
+        return -1;
+    }
 
-    // YOUR CODE HERE
+    int k = 0;
+    while(k < n && ports[port].count > 0){
 
-    return -1;
+
+        buf[k] = ports[port].buffer[ports[port].tail];
+
+        ports[port].tail = (ports[port].tail+1) % PORT_BUF_SIZE;
+
+        ports[port].count--;
+        k++;
+    }
+
+    return k; 
+
 }

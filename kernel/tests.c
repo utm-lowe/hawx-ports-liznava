@@ -252,5 +252,6 @@ port_test(void)
     if(!ports[3].free || ports[3].owner != 0 || ports[3].head != 0 ||
        ports[3].count != 0) passed = 0;
     print_pass(passed);
+
     
 }
