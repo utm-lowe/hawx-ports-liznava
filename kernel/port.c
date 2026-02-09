@@ -153,7 +153,7 @@ port_init(void)
     ports[i].free = 1;
 
     ports[i].head = 0;
-    
+
     ports[i].owner = -1;
     ports[i].type = PORT_TYPE_FREE;
 
@@ -267,7 +267,7 @@ port_write(int port, char *buf, int n)
 
     int k = 0;
     while(k < n && ports[port].count < PORT_BUF_SIZE){
-        ports[port].buffer[ports[port].head] = buf[num];
+        ports[port].buffer[ports[port].head] = buf[k];
 
         ports[port].head = (ports[port].head+1) % PORT_BUF_SIZE;
 
